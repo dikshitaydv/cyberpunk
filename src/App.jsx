@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const STYLES = 
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap');
+const STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap');
 
   :root {
     --abyss:     #020b12;
@@ -27,8 +27,31 @@ const STYLES =
     min-width: 900px;
   }
 
-  .pc  { position:fixed; top:0; left:0; width:22px; height:22px; border:1.5px solid var(--cyan); border-radius:50%; pointer-events:none; z-index:9900; transform:translate(-50%,-50%); mix-blend-mode:screen; will-change:left,top; }
-  .pcd { position:fixed; top:0; left:0; width:4px; height:4px; background:var(--cyan); border-radius:50%; pointer-events:none; z-index:9901; transform:translate(-50%,-50%); box-shadow:0 0 6px var(--cyan); will-change:left,top; }
+  .pc  {
+  position:fixed;
+  top:0; left:0;
+  width:22px; height:22px;
+  border:1.5px solid var(--cyan);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:9900;
+  transform:translate(-50%,-50%);
+  mix-blend-mode:screen;
+  will-change: transform;
+}
+
+.pcd {
+  position:fixed;
+  top:0; left:0;
+  width:4px; height:4px;
+  background:var(--cyan);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:9901;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 6px var(--cyan);
+  will-change: transform;
+}
   .scl { position:fixed; inset:0; pointer-events:none; z-index:800; background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,var(--scan) 3px,var(--scan) 4px); }
 
   .orb  { font-family:'Orbitron',monospace; }
@@ -131,7 +154,7 @@ const STYLES =
   .bbr { position:absolute; bottom:0; right:0; width:11px; height:11px; border-bottom:1px solid var(--cyan); border-right:1px solid var(--cyan); }
 
   /* page reveal */
-  .page-in { animation: crackIn 0.55s ease-out both; }
+  .page-in { animation: crackIn 0.55s ease-out both; }`
 ;
 
 /* ── Crack lines SVG paths ── */
@@ -709,7 +732,6 @@ const PAGES = {
 };
 
 export default function App() {
-  const [cur, setCur]         = useState({ x:-100, y:-100 });
   const [page, setPage]       = useState("HOME");
   const [ripples, setRip]     = useState([]);
   const [cracking, setCrack]  = useState(false);
@@ -717,11 +739,43 @@ export default function App() {
   const [pageKey, setPageKey] = useState(0);
   const ridRef = useRef(0);
 
-  useEffect(() => {
-    const mv = e => setCur({ x:e.clientX, y:e.clientY });
-    window.addEventListener("mousemove", mv, { passive:true });
-    return () => window.removeEventListener("mousemove", mv);
-  }, []);
+  const cursorRef = useRef(null);
+const dotRef = useRef(null);
+
+useEffect(() => {
+  let mouse = { x: -100, y: -100 };
+  let pos = { x: -100, y: -100 };
+
+  const speed = 0.18;
+
+  const move = (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  };
+
+  const animate = () => {
+    pos.x += (mouse.x - pos.x) * speed;
+    pos.y += (mouse.y - pos.y) * speed;
+
+    if (cursorRef.current) {
+      cursorRef.current.style.transform =
+        `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+    }
+
+    if (dotRef.current) {
+      dotRef.current.style.transform =
+        `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
+    }
+
+    requestAnimationFrame(animate);
+  };
+
+  window.addEventListener("mousemove", move);
+  animate();
+
+  return () => window.removeEventListener("mousemove", move);
+}, []);
+
 
   const navigate = useCallback((key) => {
     if (key === page || cracking) return;
@@ -750,8 +804,8 @@ export default function App() {
       <style dangerouslySetInnerHTML={{ __html: STYLES }}/>
 
       {/* Cursor */}
-      <div className="pc"  style={{ left:cur.x, top:cur.y }}/>
-      <div className="pcd" style={{ left:cur.x, top:cur.y }}/>
+      <div ref={cursorRef} className="pc" />
+      <div ref={dotRef} className="pcd" />
 
       {/* Scanlines */}
       <div className="scl"/>
